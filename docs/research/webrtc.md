@@ -57,7 +57,7 @@ WebSocket 跑在 TCP 上，一個封包在 Wi-Fi 上掉了，後面的訊息都�
 
 ⚠️ 這有一個順序上的前提：**指揮端要先拿到相機權限，才開始建立連線、收集 candidate**。如果連線先建好、相機後開，那時送出去的已經是 `.local` 名稱。所以指揮端的流程要先開相機（讀手勢本來就要），再開房讓座位加入。
 
-反過來，座位之間（兩台都沒開相機的手機）要互連，就得靠 mDNS 名稱查得回來。這條路比較不穩：
+反過來，座位之間（兩台都沒開相機的座位裝置）要互連，就得靠 mDNS 名稱查得回來。這條路比較不穩：
 
 - Android Chrome 能不能查回 `.local`，我只找到 Chromium bug 的標題（[405925「Consider bypassing Android resolution to allow .local」](https://bugs.chromium.org/p/chromium/issues/detail?id=405925)），內容需要登入或是 JavaScript 頁面讀不到，**狀態不明**。
 - WebKit 自己的 mDNS 測試在 2021 年被回報為時好時壞（[WebKit bug 230700](https://bugs.webkit.org/show_bug.cgi?id=230700)）。
@@ -111,7 +111,7 @@ sequenceDiagram
     Note over S,C: 通了：音量走 DataChannel<br/>不通：音量繼續走 WebSocket 經 DO
 ```
 
-費用上，DO 收到的 WebSocket 訊息以 20 則算 1 次請求計費，送出的訊息不收費（[Durable Objects Pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/)）。所以就算音量數值一直走 DO，一場 30 分鐘、每秒 30 則，也只是 54,000 則 ≈ 2,700 次請求。要注意的是，每秒 20–30 則訊息會讓 DO 在整場演出期間都醒著，上面說的休眠在演出中省不到錢，執行時間照算；但一場以分鐘計，量仍然很小。**費用不是改走 WebRTC 的理由，延遲與卡頓才是**。
+費用上，付費方案把 DO 收到的 WebSocket 訊息以 20 則算 1 次請求計費，送出的訊息不收費（[Durable Objects Pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/)）。照這個算法，就算音量數值一直走 DO，一場 30 分鐘、每秒 30 則，也只是 54,000 則 ≈ 2,700 次請求。⚠️ 價目表上這條 20:1 的註腳只標在付費方案那一欄，免費方案是否一樣這樣折算，文件沒有講清楚。執行時間方面，同一頁寫明「閒置且符合休眠條件的 DO 不計執行時間，即使還沒真的被移出記憶體也一樣」，所以用 Hibernation API 時，訊息與訊息之間的空檔不算錢，只算每則訊息處理的那一小段。**費用不是改走 WebRTC 的理由，延遲與卡頓才是**。
 
 另外 DO 預設建立在「第一個請求附近的機房」，之後不會搬家（[Data location](https://developers.cloudflare.com/durable-objects/reference/data-location/)）。只要讓指揮端開房時第一個連進 DO，它就會在離演出地點近的機房。
 
