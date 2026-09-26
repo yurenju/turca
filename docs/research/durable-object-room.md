@@ -4,7 +4,7 @@
 
 ## 前提
 
-`initial-research.md` 第 4 節打算讓每個**房間**對應一個 Cloudflare Durable Object（以下簡稱 DO：Cloudflare 上一種「有固定身分、單執行緒、自帶儲存」的 Worker，同一個名字在全世界只會有一個實體在跑）。它負責三件事：轉送 WebSocket 訊息、當校時的基準、記住各**座位**的狀態。
+`docs/research/initial-design.md` 第 4 節打算讓每個**房間**對應一個 Cloudflare Durable Object（以下簡稱 DO：Cloudflare 上一種「有固定身分、單執行緒、自帶儲存」的 Worker，同一個名字在全世界只會有一個實體在跑）。它負責三件事：轉送 WebSocket 訊息、當校時的基準、記住各**座位**的狀態。
 
 校時的做法類似 NTP：座位送出自己的時間 t0，伺服器記下收到的時間 t1、回覆的時間 t2，座位收到時是 t3；往返延遲是 (t3 − t0) − (t2 − t1)，時差估計是 ((t1 − t0) + (t2 − t3)) / 2。量很多次、只留往返最短的幾次。這個做法要成立，需要兩件事：伺服器讀得到一個夠準的時鐘，而且去程和回程的耗時大致對稱。
 

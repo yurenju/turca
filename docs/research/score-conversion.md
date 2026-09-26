@@ -4,7 +4,7 @@
 
 ## 前提與結論
 
-第一版的曲目是我們預先轉好的：從 OpenScore 拿 CC0 授權的 MusicXML，用 music21 解析，每個聲部輸出一份以「拍數」為單位的 JSON（格式見 `initial-research.md` 第 2 節）。這份文件查的是這條路走不走得通，以及哪些地方 music21 不會幫我們做好。
+第一版的曲目是我們預先轉好的：從 OpenScore 拿 CC0 授權的 MusicXML，用 music21 解析，每個聲部輸出一份以「拍數」為單位的 JSON（格式見 `docs/research/initial-design.md` 第 2 節）。這份文件查的是這條路走不走得通，以及哪些地方 music21 不會幫我們做好。
 
 **結論：走得通，但有三件事一定要自己補，否則各聲部會對不齊。**
 
@@ -176,7 +176,7 @@ music21 定義的類別（[repeat.py](https://github.com/cuthbertLab/music21/blo
 [{"beat": 0.0, "dur": 1.5, "pitch": [60]}, {"beat": 1.5, "dur": 0.5, "pitch": [62]}, {"beat": 2.0, "dur": 1.0, "pitch": [64]}]
 ```
 
-寫成 `initial-research.md` 的格式時，和弦要拆成好幾筆、每筆一個 `pitch` 數字，並補上 `vel`（見 3.9），例如 `{ "beat": 1.5, "dur": 0.5, "pitch": 62, "vel": 80 }`。
+寫成 `docs/research/initial-design.md` 的格式時，和弦要拆成好幾筆、每筆一個 `pitch` 數字，並補上 `vel`（見 3.9），例如 `{ "beat": 1.5, "dur": 0.5, "pitch": 62, "vel": 80 }`。
 
 幾個要注意的地方：
 

@@ -4,7 +4,7 @@
 
 ## 前提
 
-原本的構想（`initial-research.md` 第 4 節）是所有訊息都經過伺服器：每個座位和指揮端各自用 WebSocket 連到房間的 Cloudflare Durable Object（下稱 DO），由它轉送校時、速度變化、音量數值。當時因為「NAT 穿透麻煩」沒有用 WebRTC。現在地圖定了「大家連同一個 Wi-Fi 效果最好」，所以這份文件要回答：哪些訊息改成裝置之間直接連線（WebRTC DataChannel）比較好、代價是什麼、DO 還剩什麼工作。
+原本的構想（`docs/research/initial-design.md` 第 4 節）是所有訊息都經過伺服器：每個座位和指揮端各自用 WebSocket 連到房間的 Cloudflare Durable Object（下稱 DO），由它轉送校時、速度變化、音量數值。當時因為「NAT 穿透麻煩」沒有用 WebRTC。現在地圖定了「大家連同一個 Wi-Fi 效果最好」，所以這份文件要回答：哪些訊息改成裝置之間直接連線（WebRTC DataChannel）比較好、代價是什麼、DO 還剩什麼工作。
 
 ## 名詞
 
@@ -126,7 +126,7 @@ sequenceDiagram
 | 訊息 | 走哪條 | 理由 |
 | --- | --- | --- |
 | 音量數值 | **WebRTC DataChannel**（不可靠、不照順序），直連不通時退回 WebSocket | 頻率高、只要最新值、最怕 TCP 重送卡住；星狀連線不需要 mDNS 查詢成功 |
-| 速度變化 | WebSocket 經 DO | 一定要送到；本來就設計成約 150 毫秒後生效（`initial-research.md` 第 4 節），多繞一趟 Cloudflare 仍在這個時間內 |
+| 速度變化 | WebSocket 經 DO | 一定要送到；本來就設計成約 150 毫秒後生效（`docs/research/initial-design.md` 第 4 節），多繞一趟 Cloudflare 仍在這個時間內 |
 | 校時 | WebSocket 經 DO（先不動） | 沒有證據顯示直連會明顯變好；原做法已會篩掉慢的樣本 |
 | 開房、座位狀態、連線資訊交換 | WebSocket 經 DO | 本來就在那裡 |
 

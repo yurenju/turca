@@ -4,7 +4,7 @@
 
 ## 背景
 
-每個**座位**（房間裡負責演奏的一台手機或電腦）用 Web Audio 播放取樣音色，跟其他座位對齊到 10–30 毫秒以內。`initial-research.md` 的做法建立在四個還沒查證的假設上：
+每個**座位**（房間裡負責演奏的一台手機或電腦）用 Web Audio 播放取樣音色，跟其他座位對齊到 10–30 毫秒以內。`docs/research/initial-design.md` 的做法建立在四個還沒查證的假設上：
 
 1. Safari 對 Opus 的 `decodeAudioData` 支援不穩，所以優先用 AAC（.m4a）。
 2. 用 `AudioContext.outputLatency` 扣掉各機的輸出延遲。
