@@ -8,11 +8,11 @@
 
 **結論：走得通，但有三件事一定要自己補，否則各聲部會對不齊。**
 
-1. OpenScore 的一個檔是**整首四重奏（所有樂章接在一起）**，要先自己切成單一樂章再展開反覆，不然反覆會跳回第一樂章。
-2. music21 的 `expandRepeats()` 是**每個聲部各自展開**，而 Fine、D.C. 這些跳躍記號通常只標在第一小提琴上，結果第一小提琴展開了、其他三個聲部沒展開，長度直接不一樣。
+1. OpenScore 的一個檔是**整首四重奏（所有樂章接在一起）**，要先自己切成單一樂章再展開反覆，不然反覆會跳回第一樂章。切的時候要連第一/第二結尾的括號（`RepeatBracket`）一起帶過去，否則結尾會展開錯（見 3.2 第 7 點）。
+2. music21 的 `expandRepeats()` 是**每個聲部各自展開**，而 Fine（結束處）、D.C.（從頭再來）這些記號在抽查的 5 個檔裡都只標在第一小提琴上，結果第一小提琴展開了、其他三個聲部沒展開，長度直接不一樣。
 3. 小步舞曲常見的「Menuetto D.C.」這種文字 music21 認不出來（它只比對固定幾種寫法），檔案裡其實有機器可讀的 `<sound dacapo="yes"/>`，但 music21 的 MusicXML 讀取器沒讀這個屬性。
 
-簡單的反覆（`||: :||`）、第一/第二結尾、連結線合併、取得每個音的位置（以四分音符為單位）這幾件事，music21 都做得好。
+簡單的反覆（`||: :||`）、連結線合併、取得每個音的位置（以四分音符為單位）這幾件事，music21 都做得好。第一/第二結尾在括號有帶到的情況下也正確（只實測一個樂章）。
 
 ## 名詞
 
@@ -48,12 +48,12 @@ https://raw.githubusercontent.com/OpenScore/StringQuartets/main/scores/<作曲�
 
 | # | 曲目（樂章） | 檔案 | 拍號 | 反覆 | 展開後長度 | 速度 | 約略時間 | 為什麼選它 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 海頓 Op.76 No.3「皇帝」第二樂章 Poco adagio; cantabile（主題與變奏） | [sq20428156.mxl](https://github.com/OpenScore/StringQuartets/tree/main/scores/Haydn,_Joseph/String_Quartet_in_C_major,_Hob.III77,_Op.76_No.3) | 2/2 | **沒有** | 418 | ♩=80 | 5.2 分 | 最單純：沒有任何反覆，旋律有名。主題在四個聲部間輪流出現，很適合展示「多台裝置各演一部分」。有弱起小節（第 0 小節）。 |
-| 2 | 莫札特 K.157 第三樂章 Presto | [sq9199617.mxl](https://github.com/OpenScore/StringQuartets/tree/main/scores/Mozart,_Wolfgang_Amadeus/String_Quartet_No.4_in_C_major,_K.157) | 2/4 | 一個 `:||` | 284 | ♩=187 | 1.5 分 | 短，用來測第一個反覆沒有開頭記號的情況（music21 會回到樂章開頭，這裡是對的）。 |
-| 3 | 海頓 Op.1 No.1「狩獵」第一樂章 Presto | [sq8461409.mxl](https://github.com/OpenScore/StringQuartets/tree/main/scores/Haydn,_Joseph/String_Quartet_in_B-flat_major_(%E2%80%9CLa_Chasse%E2%80%9D),_Hob._III1,_Op.1_No.1) | 6/8 | 前後兩段各反覆一次 | 372 | ♩=187 | 2.0 分 | 短、音符少（四聲部共 977 個），但有 6/8 拍與弱起，可以順便確認「拍數」的定義。 |
-| 4 | 莫札特 K.156 第二樂章 Adagio | [sq22643731.mxl](https://github.com/OpenScore/StringQuartets/tree/main/scores/Mozart,_Wolfgang_Amadeus/String_Quartet_No.3_in_G_major,_K.156_(K._134b)) | 4/4 | 前後兩段各反覆一次 | 296 | ♩=71 | 4.2 分 | 慢板、只有 37 小節，指揮手勢控制速度時最有感覺。 |
+| 1 | 海頓 Op.76 No.3「皇帝」第二樂章 Poco adagio; cantabile（主題與變奏） | [sq20428156.mxl](https://github.com/OpenScore/StringQuartets/blob/9be3df2ace482130fe031b9e8a647cdf112ed243/scores/Haydn,_Joseph/String_Quartet_in_C_major,_Hob.III77,_Op.76_No.3/sq20428156.mxl) | 2/2 | **沒有** | 418 | ♩=80 | 5.2 分 | 最單純：沒有任何反覆，旋律有名。主題在四個聲部間輪流出現，很適合展示「多台裝置各演一部分」。有弱起小節（第 0 小節）。 |
+| 2 | 莫札特 K.157 第三樂章 Presto | [sq9199617.mxl](https://github.com/OpenScore/StringQuartets/blob/9be3df2ace482130fe031b9e8a647cdf112ed243/scores/Mozart,_Wolfgang_Amadeus/String_Quartet_No.4_in_C_major,_K.157/sq9199617.mxl) | 2/4 | 一個 `:||` | 284 | ♩=187 | 1.5 分 | 短，用來測第一個反覆沒有開頭記號的情況（music21 會回到樂章開頭，這裡是對的）。 |
+| 3 | 海頓 Op.1 No.1「狩獵」第一樂章 Presto | [sq8461409.mxl](https://github.com/OpenScore/StringQuartets/blob/9be3df2ace482130fe031b9e8a647cdf112ed243/scores/Haydn,_Joseph/String_Quartet_in_B-flat_major_(%E2%80%9CLa_Chasse%E2%80%9D),_Hob._III1,_Op.1_No.1/sq8461409.mxl) | 6/8 | 前後兩段各反覆一次 | 372 | ♩=187 | 2.0 分 | 短、音符少（四聲部共 977 個），但有 6/8 拍與弱起，可以順便確認「拍數」的定義。 |
+| 4 | 莫札特 K.156 第二樂章 Adagio | [sq22643731.mxl](https://github.com/OpenScore/StringQuartets/blob/9be3df2ace482130fe031b9e8a647cdf112ed243/scores/Mozart,_Wolfgang_Amadeus/String_Quartet_No.3_in_G_major,_K.156_(K._134b)/sq22643731.mxl) | 4/4 | 前後兩段各反覆一次 | 296 | ♩=71 | 4.2 分 | 慢板、只有 37 小節，指揮手勢控制速度時最有感覺。 |
 | 5 | 莫札特 K.156 第三樂章 Tempo di Menuetto | 同上 | 3/4 | 四段反覆＋「Menuetto da capo senza Ritornello」＋ Fine | 480（修正後） | ♩=120 | 4.0 分 | 刻意挑的**難題**：小步舞曲＋中段＋從頭再來到 Fine。拿來驗證第 4 節的補救做法。 |
-| 備選 | 德弗札克 Op.96「美國」第二樂章 Lento | [sq8885439.mxl](https://github.com/OpenScore/StringQuartets/tree/main/scores/Dvo%C5%99%C3%A1k,_Anton%C3%ADn/String_Quartet_No.12,_Op.96_(%E2%80%9CAmerican%E2%80%9D)) | 6/8 | 沒有 | 291 | ♩=56（♪=112） | 5.2 分 | 有名、沒反覆，但和弦（123 個）與三連音較多、中途有速度變化，當第二批。 |
+| 備選 | 德弗札克 Op.96「美國」第二樂章 Lento | [sq8885439.mxl](https://github.com/OpenScore/StringQuartets/blob/9be3df2ace482130fe031b9e8a647cdf112ed243/scores/Dvo%C5%99%C3%A1k,_Anton%C3%ADn/String_Quartet_No.12,_Op.96_(%E2%80%9CAmerican%E2%80%9D)/sq8885439.mxl) | 6/8 | 沒有 | 291 | ♩=56（♪=112） | 5.2 分 | 有名、沒反覆，但和弦（123 個）與三連音較多、中途有速度變化，當第二批。 |
 
 實測時四個聲部都讀得到（Violin 1、Violin 2、Viola、Violoncello），`transposition` 全部是 `None`。
 
@@ -66,8 +66,10 @@ https://raw.githubusercontent.com/OpenScore/StringQuartets/main/scores/<作曲�
 | 項目 | music21 做得到嗎 | 我們要補什麼 |
 | --- | --- | --- |
 | 讀 `.mxl` | ✅ `converter.parse()` 直接讀 | — |
-| 切樂章 | ❌ 沒有這個概念 | 依小節號重新從 1／0 開始的位置切開 |
-| `||: :||` 與第一/第二結尾 | ✅ 單一樂章內正確 | 開頭沒有 `||:` 時會回到**整段 stream 的開頭**，所以一定要先切樂章 |
+| 切樂章 | ❌ 沒有這個概念 | 依小節號重新從 1／0 開始的位置切開，並把第一/第二結尾的括號一起帶過去 |
+| `||: :||` | ✅ 單一樂章內正確 | 開頭沒有 `||:` 時會回到**整段 stream 的開頭**，所以一定要先切樂章 |
+| 第一/第二結尾 | ✅ 括號有帶到時正確（只實測一個樂章） | 括號掛在聲部層級，逐小節複製會弄丟 |
+| 各聲部 `divisions` 不同 | ✅ 讀檔時就換算成四分音符 | — |
 | D.C. / D.S. / Fine / Coda | ⚠️ 部分 | 只認固定文字；只認一個跳躍指令；每個聲部各自判斷 → 要自己把記號補到每個聲部 |
 | 連結線合併 `stripTies()` | ✅ | 要在展開反覆**之後**做 |
 | 移調 `toSoundingPitch()` | ✅（四重奏用不到） | 呼叫一次保險即可 |
@@ -81,7 +83,9 @@ https://raw.githubusercontent.com/OpenScore/StringQuartets/main/scores/<作曲�
 
 music21 把整首四重奏讀成一條長譜。實測 10 個檔案，除了 Wolf《Italian Serenade》（本來就只有一個樂章），其他 9 個都能從「小節號變小」的位置切出正確的樂章數。抽查其中 5 個檔，每個樂章第一小節都有 `I.`、`II.` 這類文字。
 
-**不先切的後果**：直接對整首呼叫 `expandRepeats()`，海頓「狩獵」從 807 個四分音符變成 18946（23 倍），海頓 Op.74 No.3 從 1653 變成 12516。原因是 music21 遇到沒有對應開頭的 `:||` 時會跳回整段 stream 的開頭，也就是第一樂章（見 3.2）。切成單一樂章後同一個檔的每個樂章長度都合理。
+**不先切的後果**：直接對整首呼叫 `expandRepeats()`，海頓「狩獵」從 807 個四分音符變成 18946（23 倍），海頓 Op.74 No.3 從 1653 變成 12516。原因是 music21 遇到沒有對應開頭的 `:||` 時會跳回整段 stream 的開頭，也就是第一樂章（見 3.2）。切成單一樂章後長度都回到合理範圍，但「長度合理」不代表順序對，有第一/第二結尾的樂章要另外檢查（見 3.2 第 7 點）。
+
+**各聲部 `divisions` 不一致不是問題**：MusicXML 用 `<divisions>` 表示「一個四分音符切成幾份」，每個聲部可以不同。music21 讀檔時每個聲部各自記住目前的 `divisions`（[xmlToM21.py L5866-L5881](https://github.com/cuthbertLab/music21/blob/v10.5.0/music21/musicxml/xmlToM21.py#L5866-L5881)），再把每個音的 `<duration>` 除以它換成四分音符（[L3735-L3739](https://github.com/cuthbertLab/music21/blob/v10.5.0/music21/musicxml/xmlToM21.py#L3735-L3739)），所以讀進來之後所有聲部都是同一個單位。實測過的樂章（莫札特 K.157 第一樂章、海頓「狩獵」第一樂章）四個聲部展開後總長都一致。
 
 ### 3.2 `expandRepeats()`：簡單反覆可以，跳躍要小心
 
@@ -116,9 +120,15 @@ music21 把整首四重奏讀成一條長譜。實測 10 個檔案，除了 Wolf
 
 5. **D.C. 之後不再反覆。** `DaCapo` 等跳躍指令的 `repeatAfterJump` 預設是 `False`（[repeat.py L254-L268](https://github.com/cuthbertLab/music21/blob/v10.5.0/music21/repeat.py#L254-L268)），也就是從頭再來時跳過反覆，這正好符合小步舞曲的慣例（senza ritornello）。
 
-6. **反覆記號不成對時的行為有爭議。** 海頓「狩獵」第二樂章（小步舞曲＋中段）的中段只有 `:||` 沒有 `||:`，music21 回到樂章開頭而不是中段開頭，展開出來的順序是 `1-10 1-34 11-48 1-10 …`，不是演奏者會彈的順序。music21 上有一張還開著的 issue 在講同樣的事：[#1713 expandRepeats don't work as expected](https://github.com/cuthbertLab/music21/issues/1713)，回覆認為這種譜「is a gray area, not really a bug」。另一張開著的 [#1502](https://github.com/cuthbertLab/music21/issues/1502) 回報某些譜 `expandRepeats()` 會跑非常久；我們的候選曲目每個樂章都在幾秒內跑完。
+6. **反覆記號不成對時會展開錯。** 海頓「狩獵」第二樂章（小步舞曲＋中段）的中段只有 `:||` 沒有 `||:`，music21 回到樂章開頭而不是中段開頭，展開出來的順序是 `1-10 1-34 11-48 1-10 …`，不是演奏者會彈的順序。music21 上還開著的 [#1713](https://github.com/cuthbertLab/music21/issues/1713) 是同樣的情況，一位留言者（不是維護者）認為這種譜「is a gray area, not really a bug」，維護者沒有表態。另一張還開著的 [#1502](https://github.com/cuthbertLab/music21/issues/1502) 原本回報 `expandRepeats()` 跑非常久，回報者後來發現是譜本身少了 `||:`，補上後就跑得完；維護者 mscuthbert 在那裡的說法是每個 `:||` 都要有自己對應的開頭（樂曲開頭算一個隱含的開頭）。所以這種譜比較像是要先修譜或先檢查，不能指望 music21 猜對。我們的候選樂章每個都在幾秒內展開完。
 
-7. **有第一/第二結尾時小節號會重複。** 海頓「皇帝」第一樂章展開後出現好幾個編號 43、119 的小節（`0-43 43-43 43-43 …`），總長 507.5 → 1003.5 看起來合理，但**這次沒有逐小節核對**。這個樂章不在候選清單裡。
+7. **切樂章時要把第一/第二結尾的括號帶過去。** 結尾括號（`spanner.RepeatBracket`）不在小節裡，而是掛在整個聲部上。只把小節一個個 `deepcopy` 到新的 `Score`，括號就不見了：海頓「皇帝」第一個聲部原本有 6 個括號，這樣切完剩 0。這時展開的總長（507.5 → 1003.5）看起來合理，但第一結尾被彈了兩次，順序是錯的。
+
+   把原聲部裡屬於這個樂章的括號，依小節位置對應到複製後的小節重新建一個，再展開，順序就對了：`0-43 43X1-43X3 0-119 119X4-119X6 45-121`：第一次彈第一結尾（43X1–43X3），反覆時跳過它、接第二結尾（第 44 小節）一路到 119；後半段同理，第二次跳過 119X4–119X6、接第 120 小節。
+
+   小節號重複（好幾個 43、119）是 MuseScore 本來就有的：同一小節被拆成幾段時會加上 `numberSuffix`（`X1`、`X2`…），不是 music21 產生的。
+
+   這次只在這一個樂章上核對過。5 個候選樂章都沒有結尾括號，不受影響；抽查的檔裡有括號的是「皇帝」第一、四樂章與「狩獵」第四樂章。
 
 ### 3.3 D.C. / D.S. / Coda 支援程度
 
@@ -129,14 +139,15 @@ music21 定義的類別（[repeat.py](https://github.com/cuthbertLab/music21/blo
 
 在限制條件內（一段只有一個指令、記號數量對得上、文字寫法完全符合）這些都會展開。實測德弗札克 Op.96 第三樂章 `Da Capo al Fine` 從 196 小節展開成 244 小節（196＋回到開頭彈到第 48 小節的 Fine），正確，只是其他聲部沒跟上（見 3.2 第 1 點）。D.S.／Coda 的實際曲目這次沒有遇到，沒實測。
 
-### 3.4 補救做法（實測有效）
+### 3.4 補救做法
 
 在單一樂章上做這兩步之後再 `expandRepeats()`：
 
 1. 找到 MusicXML 裡帶 `<sound dacapo="yes"/>` 的那個文字，換成 `repeat.DaCapoAlFine()`（樂章裡有 `<sound fine="yes"/>` 時）或 `repeat.DaCapo()`。
+   - ⚠️ **這一步的正式做法還沒實測。** 實測時用的是簡化版：只看樂章最後一小節，文字裡有 `capo` 或 `d.c` 就換掉。music21 讀檔時把 `<sound>` 的這些屬性丟掉了，要靠 `<sound dacapo>` 定位，得另外解析 XML，再依小節與位置對回 music21 的物件。這段對應還沒寫過。
 2. 把第一小提琴上所有 `RepeatExpression`（Fine、Coda、Segno、D.C. …）複製到其他三個聲部的同一個小節、同一個位置。
 
-實測結果：
+實測結果（D.C. 用上面說的簡化版找）：
 
 | 樂章 | 補救前 | 補救後 | 對不對 |
 | --- | --- | --- | --- |
@@ -149,7 +160,7 @@ music21 定義的類別（[repeat.py](https://github.com/cuthbertLab/music21/blo
 
 ### 3.5 `stripTies()`：連結線合併
 
-[stream/base.py L7168-L7190](https://github.com/cuthbertLab/music21/blob/v10.5.0/music21/stream/base.py#L7168-L7190)：把連在一起的音合成一個，長度加總。文件裡寫明限制：「Presently, this only works if tied notes are sequential in the same voice」，也就是只處理同一個聲部線（voice）裡前後相鄰的音。實測莫札特 K.157 第一樂章中提琴開頭被合成一個 6.5 拍的長音，正確。
+[stream/base.py L7168-L7190](https://github.com/cuthbertLab/music21/blob/v10.5.0/music21/stream/base.py#L7168-L7190)：把連在一起的音合成一個，長度加總。文件裡寫明限制：「Presently, this only works if tied notes are sequential in the same voice」，也就是只處理同一個聲部內同一條旋律線（MusicXML 的 `<voice>`）裡前後相鄰的音。實測莫札特 K.157 第一樂章中提琴開頭被合成一個 6.5 拍的長音，正確。
 
 順序上要**先展開反覆、再合併連結線**：連結線可能跨進第一/第二結尾，先合併的話展開時會切錯。
 
@@ -159,11 +170,13 @@ music21 定義的類別（[repeat.py](https://github.com/cuthbertLab/music21/blo
 
 ### 3.7 取得每個音的位置
 
-`part.flatten().notes` 之後每個音的 `.offset` 就是從樂章開頭算起的位置，單位是四分音符，`.quarterLength` 是長度，`.pitches` 裡的 `.midi` 是 MIDI 音高（和弦會有好幾個）。實測輸出：
+`part.flatten().notes` 之後每個音的 `.offset` 就是從樂章開頭算起的位置，單位是四分音符，`.quarterLength` 是長度，`.pitches` 裡的 `.midi` 是 MIDI 音高（和弦會有好幾個）。實測取出的中間形式（還不是最終格式）：
 
 ```json
 [{"beat": 0.0, "dur": 1.5, "pitch": [60]}, {"beat": 1.5, "dur": 0.5, "pitch": [62]}, {"beat": 2.0, "dur": 1.0, "pitch": [64]}]
 ```
+
+寫成 `initial-research.md` 的格式時，和弦要拆成好幾筆、每筆一個 `pitch` 數字，並補上 `vel`（見 3.9），例如 `{ "beat": 1.5, "dur": 0.5, "pitch": 62, "vel": 80 }`。
 
 幾個要注意的地方：
 
@@ -188,8 +201,8 @@ music21 定義的類別（[repeat.py](https://github.com/cuthbertLab/music21/blo
 
 照處理順序：
 
-1. 下載 `.mxl`，用小節號重新開始的位置切出單一樂章。
-2. 在每個樂章裡：把帶 `<sound dacapo>` 的文字換成 music21 的 `DaCapo`／`DaCapoAlFine`；把第一小提琴上的跳躍記號複製到其他聲部。
+1. 下載 `.mxl`，用小節號重新開始的位置切出單一樂章，並把屬於這個樂章的第一/第二結尾括號（`RepeatBracket`）對應到新的小節上一起帶過去。
+2. 在每個樂章裡：另外解析 XML 找出帶 `<sound dacapo>` 的位置，把那段文字換成 music21 的 `DaCapo`／`DaCapoAlFine`；再把第一小提琴上**所有** `RepeatExpression`（D.C.、D.S. 這類跳躍指令，加上 Fine、Segno、Coda 這類位置記號）複製到其他聲部。只複製 D.C. 不複製 Fine 的話，其他聲部會有 `DaCapoAlFine` 卻沒有 Fine，music21 會丟 `ExpanderException`。
 3. `expandRepeats()`，並檢查四個聲部展開後的長度相同（不同就代表還有沒補到的記號）。
 4. `stripTies()`、`toSoundingPitch()`。
 5. 每個聲部 `flatten().notes` → `beat`（轉小數）、`dur`、`pitch`（和弦拆開）、`vel`（`getRealized()`）。裝飾音另外處理。
@@ -215,11 +228,11 @@ Verovio 是研究文件提到的另一條路（在指揮端用 WebAssembly 即�
 
 ## 6. 沒查到或沒驗證的
 
-- **OpenScore 官網 `openscore.cc`** 連不上：這台機器的 proxy 回報名稱解析失敗（不是白名單擋的）。已送出放行請求。OpenScore 的說明改以 GitHub 官方鏡像的 README 為準。
+- **OpenScore 官網 `openscore.cc`** 沒讀到，OpenScore 的說明改以 GitHub 官方鏡像的 README 為準。
 - **MuseScore 網站 `musescore.com`** 對程式抓取回 403，沒讀到 OpenScore 帳號頁本身的說明。檔案與授權都以 GitHub 鏡像為準，README 自稱是該帳號的官方鏡像。
 - **music21 線上文件**：WebFetch 抓到的模組說明頁內容不完整，所以改讀原始碼與 docstring（這就是線上文件的來源），連結都指向 v10.5.0 tag。
 - D.S.／Coda 跳躍沒有找到實際曲目測試，只有讀原始碼。
-- 有第一/第二結尾時小節號重複（3.2 第 7 點）沒逐小節核對。
+- 第一/第二結尾只在海頓「皇帝」第一樂章核對過（3.2 第 7 點）。
 - 楔形記號（漸強、漸弱）對力度的影響沒實測。
 - Verovio 在單一樂章上的展開結果有沒有正確，沒有測（要先把 MusicXML 切成單一樂章的檔案）。
 
@@ -227,7 +240,7 @@ Verovio 是研究文件提到的另一條路（在指揮端用 WebAssembly 即�
 <summary>實測方式</summary>
 
 - 在 scratch 目錄的 venv 裡 `pip install music21 verovio`（music21 10.5.0、Verovio 6.3.0），從 GitHub raw 下載 10 個 `.mxl`：海頓 Op.1 No.1、Op.64 No.5、Op.74 No.3、Op.76 No.3，莫札特 K.155、K.156、K.157，舒伯特 D.18，德弗札克 Op.96，Wolf《Italian Serenade》。
-- 切樂章：取第一個聲部的小節清單，在 `number` 比前一個小的位置切開，四個聲部用同樣的索引範圍各自 `deepcopy` 小節，組成新的 `Score`。
+- 切樂章：取第一個聲部的小節清單，在 `number` 比前一個小的位置切開，四個聲部用同樣的索引範圍各自 `deepcopy` 小節，組成新的 `Score`。這樣切會弄丟結尾括號（3.2 第 7 點），核對「皇帝」第一樂章時另外把括號重建回去。
 - 檢查展開結果：把展開後第一個聲部的小節號寫成連續區段（例如 `1-14 1-36 15-46`），跟譜上的反覆位置人工比對。
 - 補救做法的程式碼重點：
 
