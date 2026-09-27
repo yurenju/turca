@@ -60,7 +60,8 @@ export class BeatDetector {
     const b = this.beats.slice(-(this.o.window + 1))
     if (b.length < 2) return null
     const iv = b.slice(1).map((t, i) => t - b[i]).sort((x, y) => x - y)
-    return 60000 / iv[Math.floor(iv.length / 2)]
+    const m = iv.length >> 1
+    return 60000 / (iv.length % 2 ? iv[m] : (iv[m - 1] + iv[m]) / 2)
   }
 
   private setExt(s: Sample, prev: Sample | null) {

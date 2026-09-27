@@ -9,6 +9,8 @@
 
 程式碼識別字、指令、檔名、套件名稱保留原文。
 
+這條管的是對話。issue、PR、文件本來就用中文寫；commit 訊息沿用 `git log` 既有的慣例。
+
 ## Agent skills
 
 ### Issue tracker

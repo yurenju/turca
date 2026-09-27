@@ -284,10 +284,12 @@ $('start').onclick = async () => {
 $('reset').onclick = () => {
   transport.stop()
   det.beats = []
+  diffs.length = 0 // 畫面上的「最近 8 拍」只算這一輪；log 保留，複製時看得到每一輪
   state = 'idle'
 }
 $('stop').onclick = () => {
   transport.stop()
+  diffs.length = 0
   state = 'idle'
 }
 $('copy').onclick = () =>
