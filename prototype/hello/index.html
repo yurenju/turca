@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE · hello</title>
+    <style>
+      body { font: 16px system-ui, sans-serif; margin: 16px; background: #111; color: #eee; }
+      .banner { background: #a33; padding: 4px 8px; display: inline-block; margin-bottom: 8px; }
+      button, input { font-size: 16px; padding: 6px 12px; margin: 4px 4px 4px 0; }
+      #log { font: 13px ui-monospace, monospace; white-space: pre-wrap; background: #000; padding: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="banner">PROTOTYPE — 部署骨架（地圖 #1、票 #7）</div>
+    <p>連線：<b id="status">連線中…</b>　房間裡有 <b id="peers">?</b> 台　收到 <b id="count">0</b> 則</p>
+    <div>
+      <input id="text" value="hello" />
+      <button id="send">送出</button>
+      <button id="burst">一口氣送 1000 則</button>
+    </div>
+    <div id="log"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

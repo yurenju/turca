@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "turca",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-25",
+  // `npm run build` 把 prototype/*/index.html 輸出到 dist/，對得到檔案的網址直接回檔案，
+  // 對不到的（例如 /prototype/hello/ws）才進 Worker。
+  "assets": { "directory": "./dist" },
+  "durable_objects": {
+    "bindings": [{ "name": "HELLO_ROOM", "class_name": "HelloRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HelloRoom"] }],
+  // PR 的 Preview 不繼承上面的設定；binding 要在這裡再寫一次，每個 Preview 會拿到自己的一份 DO。
+  "previews": {
+    "durable_objects": {
+      "bindings": [{ "name": "HELLO_ROOM", "class_name": "HelloRoom" }]
+    }
+  },
+  "observability": { "enabled": true }
+}
