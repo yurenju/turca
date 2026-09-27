@@ -10,5 +10,11 @@
     "bindings": [{ "name": "HELLO_ROOM", "class_name": "HelloRoom" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HelloRoom"] }],
+  // PR 的 Preview 不繼承上面的設定；binding 要在這裡再寫一次，每個 Preview 會拿到自己的一份 DO。
+  "previews": {
+    "durable_objects": {
+      "bindings": [{ "name": "HELLO_ROOM", "class_name": "HelloRoom" }]
+    }
+  },
   "observability": { "enabled": true }
 }
