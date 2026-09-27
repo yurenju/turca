@@ -16,5 +16,7 @@
       "bindings": [{ "name": "HELLO_ROOM", "class_name": "HelloRoom" }]
     }
   },
+  // 讓每個 PR 的 Preview 有自己的 workers.dev 網址（Cloudflare 預設不開）。
+  "preview_urls": true,
   "observability": { "enabled": true }
 }
