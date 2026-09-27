@@ -16,6 +16,11 @@ Cloudflare Workers Builds 盯著 `main`，合併進去就自動部署，不用�
 
 Worker 名字要跟 `wrangler.jsonc` 的 `name`（`turca`）一樣。
 
+- 正式版：<https://turca.yurenju.workers.dev/prototype/hello/>
+- 每個 PR 也會部署一份 Preview，網址貼在 PR 上 Cloudflare 的留言裡（像 `https://<部署編號>-turca.yurenju.workers.dev`）。
+  每個 Preview 有自己的一份 Durable Object，不會跟正式版的房間混在一起。
+  要有網址，dashboard 上 `turca` → Domains → Worker URL 的 **Preview** 要打開。
+
 ### 新增一個 prototype
 
 - 只有網頁：新增 `prototype/<名字>/index.html` 就好，build 會自動收進去。
