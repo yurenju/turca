@@ -1,0 +1,16 @@
+{
+  "name": "turca",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "check:beat": "node prototype/beat-tracking/beat.check.ts"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "tone": "^15.1.22"
+  },
+  "devDependencies": {
+    "vite": "^8.3.1"
+  }
+}
