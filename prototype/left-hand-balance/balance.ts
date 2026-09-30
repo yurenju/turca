@@ -23,7 +23,7 @@ export const SEATS = 4
 /** 第 i 個座位在指揮面前的位置，0 = 最左、1 = 最右。 */
 export const seatPos = (i: number) => i / (SEATS - 1)
 
-export type Balance = { h: number; v: number; weights: number[]; gains: number[] }
+export type Balance = { h: number; v: number; weights: number[]; gains: number[]; full: number } // full = 正對著的座位的倍率
 
 /** 左手腕 → 各聲部的音量倍率；手放下了就回傳 null（由呼叫端慢慢恢復原本的音量）。 */
 export function balance(w: Point, c: Calib, o: BalanceOpts): Balance | null {
@@ -35,11 +35,11 @@ export function balance(w: Point, c: Calib, o: BalanceOpts): Balance | null {
   // 倍率在 dB 上線性：v = 1 → max、v = -1 → min、v = 0 → 1
   const db = v >= 0 ? v * Math.log(o.max) : -v * Math.log(o.min)
   const weights = Array.from({ length: SEATS }, (_, i) => Math.exp(-((h - seatPos(i)) ** 2) / (2 * o.sigma ** 2)))
-  return { h, v, weights, gains: weights.map((wt) => Math.exp(db * wt)) }
+  return { h, v, weights, gains: weights.map((wt) => Math.exp(db * wt)), full: Math.exp(db) }
 }
 
 // ---- 認手 ----
-export type Hand = { w: Point; label: string }
+export type Hand = { w: Point; label: string; lm?: Point[] } // lm = 21 個點，0 是手腕、8 是食指指尖
 export type Pick = { left: Hand | null; right: Hand | null }
 export type Track = { left: Point | null; right: Point | null; tL: number; tR: number }
 export const newTrack = (): Track => ({ left: null, right: null, tL: 0, tR: 0 })
@@ -69,4 +69,36 @@ export function byTracking(track: Track, hands: Hand[], t: number): Pick {
   if (pick.left) (track.left = pick.left.w), (track.tL = t)
   if (pick.right) (track.right = pick.right.w), (track.tR = t)
   return pick
+}
+
+// ---- 手勢 ----
+export type Shape = 'point' | 'palm' | 'other'
+const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
+/** 指尖離手腕比第二個關節離手腕遠一截，就算伸直（不看方向，所以食指朝側邊也算）。 */
+const extended = (lm: Point[], tip: number) => dist(lm[0], lm[tip]) > dist(lm[0], lm[tip - 2]) * 1.15
+/** 只有食指伸直 = 指（選座位）；四指都伸直 = 張開手掌（調音量）。大拇指不看。 */
+export function shape(lm: Point[]): Shape {
+  const [index, middle, ring, pinky] = [8, 12, 16, 20].map((tip) => extended(lm, tip))
+  if (index && !middle && !ring && !pinky) return 'point'
+  if (index && middle && ring && pinky) return 'palm'
+  return 'other'
+}
+
+/**
+ * 全部恢復的手勢：張開手掌，1 秒內從一端掃到另一端（哪個方向都可以）。
+ * 手動得快時畫面會糊，模型常在中間幾格抓不到手，所以斷掉 0.3 秒以內都接著算。
+ */
+export class Sweep {
+  private s: { t: number; h: number }[] = []
+  /** h = 張開手掌時手在左右的位置（0 = 最左、1 = 最右）；這一格沒有張開的手就傳 null。 */
+  push(t: number, h: number | null): boolean {
+    const last = this.s.at(-1)
+    if (last && t - last.t > 300) this.s = []
+    if (h === null) return false
+    this.s.push({ t, h })
+    while (this.s[0].t < t - 1000) this.s.shift()
+    if (!this.s.some((p) => p.h < 0.15) || !this.s.some((p) => p.h > 0.85)) return false
+    this.s = []
+    return true
+  }
 }

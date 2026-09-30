@@ -7,18 +7,19 @@
     <style>
       body { font: 14px system-ui, sans-serif; margin: 16px; background: #111; color: #eee; }
       .banner { background: #a33; padding: 4px 8px; display: inline-block; margin-bottom: 8px; }
-      .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+      .row { display: flex; gap: 16px; align-items: flex-start; }
+      #controls { flex: 0 0 300px; position: sticky; top: 8px; }
       .stage { position: relative; width: 640px; max-width: 100%; }
       .stage video, .stage canvas { width: 100%; display: block; transform: scaleX(-1); }
       .stage canvas { position: absolute; inset: 0; }
       #prompt { position: absolute; inset: 0; display: grid; place-items: center; font-size: 32px; font-weight: bold;
         text-align: center; text-shadow: 0 0 8px #000; pointer-events: none; }
       #seats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 640px; max-width: 100%; margin-top: 8px; }
-      .seat { background: #000; padding: 6px; text-align: center; border: 2px solid #333; }
+      .seat { background: #000; padding: 6px; text-align: center; border: 2px solid #333; cursor: pointer; }
       .seat .bar { height: 120px; position: relative; background: #222; margin: 6px 0; }
       .seat .fill { position: absolute; bottom: 0; left: 0; right: 0; background: #6c6; }
       .seat .one { position: absolute; left: 0; right: 0; border-top: 1px dashed #aaa; }
-      #stats { font: 13px ui-monospace, monospace; white-space: pre; background: #000; padding: 8px; min-width: 320px; }
+      #stats { font: 13px ui-monospace, monospace; white-space: pre; background: #000; padding: 8px; margin-top: 8px; width: 640px; max-width: 100%; box-sizing: border-box; overflow-x: auto; }
       #controls label { display: block; margin: 6px 0; }
       #controls input[type=range] { width: 180px; vertical-align: middle; }
       button { font-size: 16px; padding: 6px 14px; margin-right: 8px; }
@@ -32,16 +33,17 @@
       <button id="copy">複製紀錄</button>
     </div>
     <p>
-      四個聲部由左到右是第一小提琴、第二小提琴、中提琴、大提琴（聲音也照這個順序從左到右擺）。
-      左手的左右位置選聲部，高於胸前變大聲、低於胸前變小聲，手垂下或離開畫面就慢慢恢復。
-      右手可以同時打拍，只用來看會不會互相干擾，不會改速度。
+      四個座位由左到右是小號（旋律）、鋼琴、貝斯、鼓，聲音也照這個順序從左到右擺。樂器只是為了好分辨，第一版還是弦樂四重奏。
+      左手<b>比食指</b>指向一個座位來選擇；<b>張開手掌</b>時選擇鎖住，高於胸前變大聲、低於胸前變小聲；
+      張開手掌<b>快速橫掃過全部座位</b>就全部恢復；其他手勢（握拳、放鬆）或手離開畫面時不調整，音量慢慢恢復（勾「保持音量」就不恢復）。
+      右手可以同時打拍，只用來看會不會互相干擾。
     </p>
     <div class="row">
       <div>
         <div class="stage"><video id="video" playsinline muted></video><canvas id="overlay"></canvas><div id="prompt"></div></div>
         <div id="seats"></div>
+        <div id="stats">按「開始」</div>
       </div>
-      <div id="stats">按「開始」</div>
       <div id="controls"></div>
     </div>
     <script type="module" src="./main.ts"></script>

@@ -1,6 +1,6 @@
 // PROTOTYPE — balance.ts 的自我檢查：npm run check:balance
 import assert from 'node:assert/strict'
-import { balance, byTracking, newTrack } from './balance.ts'
+import { balance, byTracking, newTrack, shape, Sweep } from './balance.ts'
 
 const c = { left: 0.2, right: 0.8, chestY: 0.5 } // 指揮視角的 0.2–0.8
 const o = { sigma: 0.15, span: 0.25, max: 1.5, min: 0.3, dropAt: 1.5 }
@@ -41,5 +41,38 @@ for (let k = 0; k <= 10; k++) {
   const p = byTracking(tr2, [{ w: { x: rx, y: 0.6 }, label: '?' }, { w: { x: lx, y: 0.4 }, label: '?' }], k * 33)
   assert.equal(p.left!.w.x, lx)
 }
+
+// 手勢：手腕在 (0.5, 0.8)，手指往上長。伸直的手指關節一路往上，彎起來的指尖縮回手腕附近
+function hand(straight: boolean[]) {
+  const lm = Array.from({ length: 21 }, () => ({ x: 0.5, y: 0.8 }))
+  ;[8, 12, 16, 20].forEach((tip, k) => {
+    const x = 0.44 + k * 0.04
+    lm[tip - 3] = { x, y: 0.7 } // 指根
+    lm[tip - 2] = { x, y: 0.65 } // 第二個關節
+    lm[tip - 1] = { x, y: straight[k] ? 0.6 : 0.68 }
+    lm[tip] = { x, y: straight[k] ? 0.55 : 0.72 }
+  })
+  return lm
+}
+assert.equal(shape(hand([true, false, false, false])), 'point')
+assert.equal(shape(hand([true, true, true, true])), 'palm')
+assert.equal(shape(hand([false, false, false, false])), 'other') // 握拳
+assert.equal(shape(hand([true, true, false, false])), 'other') // 比 YA
+// 食指朝側邊指也要認得：把整隻手轉 90 度
+const side = hand([true, false, false, false]).map((p) => ({ x: 0.5 + (0.8 - p.y), y: 0.8 - (p.x - 0.5) }))
+assert.equal(shape(side), 'point')
+
+// 全部恢復：0.6 秒從左掃到右會觸發；慢慢移（3 秒）不會；
+// 中間糊掉幾格（0.2 秒）照樣算，斷太久（0.4 秒）就要重來
+const sweep = (ms: number, gap: [number, number] = [-1, -1]) => {
+  const sw = new Sweep()
+  let hit = false
+  for (let t = 0; t <= ms; t += 33) hit ||= sw.push(t, t >= gap[0] && t <= gap[1] ? null : t / ms)
+  return hit
+}
+assert.equal(sweep(600), true)
+assert.equal(sweep(3000), false)
+assert.equal(sweep(900, [300, 500]), true)
+assert.equal(sweep(900, [250, 650]), false)
 
 console.log('balance.ts ok:', top.gains.map((g) => g.toFixed(2)).join(', '))
