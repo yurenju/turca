@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "check:beat": "node prototype/beat-tracking/beat.check.ts",
+    "check:balance": "node prototype/left-hand-balance/balance.check.ts",
     "build": "vite build",
     "preview": "vite build && wrangler dev"
   },
