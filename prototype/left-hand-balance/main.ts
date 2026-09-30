@@ -4,7 +4,7 @@
 import * as Tone from 'tone'
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
 import { BeatDetector } from '../beat-tracking/beat.ts'
-import { balance, seatPos, SEATS, type Balance, type Calib, type Point } from './balance.ts'
+import { balance, byTracking, newTrack, seatPos, SEATS, type Balance, type Calib, type Hand, type Pick, type Point } from './balance.ts'
 
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
 const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'
@@ -17,7 +17,7 @@ const promptEl = $('prompt')
 
 // ---- 可以即時調的參數 ----
 const cfg = {
-  rule: 'position' as 'position' | 'label', // 怎麼認左手
+  rule: 'track' as 'track' | 'label', // 怎麼認左手
   sigma: 0.15,
   span: 0.25,
   max: 1.5,
@@ -42,7 +42,7 @@ const sliders: [keyof typeof cfg, string, number, number, number][] = [
 const controls = $('controls')
 {
   const el = document.createElement('label')
-  el.innerHTML = `認左手 <select><option value=position>位置（兩隻手取原始畫面較右的；一隻手看在哪一半）</option>
+  el.innerHTML = `認左手 <select><option value=track>追蹤（離上一格的左手最近的那隻）</option>
     <option value=label>模型標籤（對調後，Right = 指揮的左手）</option></select>`
   const sel = el.querySelector('select')!
   sel.onchange = () => (cfg.rule = sel.value as typeof cfg.rule)
@@ -108,18 +108,7 @@ transport.loop = true
 transport.loopEnd = at(32)
 
 // ---- 認手 ----
-type Hand = { w: Point; label: string }
-type Pick = { left: Hand | null; right: Hand | null }
-
-/** 位置規則：原始畫面沒翻，指揮的左手在右邊（x 較大）。 */
-function byPosition(hands: Hand[]): Pick {
-  if (hands.length >= 2) {
-    const s = [...hands].sort((a, b) => a.w.x - b.w.x)
-    return { right: s[0], left: s.at(-1)! }
-  }
-  const h = hands[0] ?? null
-  return h && h.w.x > 0.5 ? { left: h, right: null } : { left: null, right: h }
-}
+const track = newTrack()
 /** 標籤規則：右手打拍那張量到，沒翻的畫面送進去標籤是反的，所以 Right = 指揮的左手。 */
 const byLabel = (hands: Hand[]): Pick => ({
   left: hands.find((h) => h.label === 'Right') ?? null,
@@ -133,23 +122,27 @@ const STEPS = [
   { key: 'chest', text: '左手舉在胸前<br>手肘自然彎著' },
 ] as const
 let calibStep = -1
-let calibStart = 0
+let calibStart = -1 // 第一格進來才開始計時
 let calibSamples: Point[] = []
+let calibMsg = ''
 const median = (a: number[]) => [...a].sort((x, y) => x - y)[a.length >> 1]
 
 function runCalib(t: number, hands: Hand[]) {
+  if (calibStart < 0) calibStart = t
   const el = t - calibStart
   const step = STEPS[calibStep]
   promptEl.innerHTML = `${step.text}<br>${Math.ceil((3000 - el) / 1000)}`
-  // 校正時右手放下，畫面上只要有一隻手就當它是左手（伸到最右時位置規則會認錯）
-  if (el > 2000 && hands.length === 1) calibSamples.push(hands[0].w)
+  // 校正時右手放下，所以取畫面上最高的那隻手當左手（不靠認手規則，才不會跟校正互相影響）
+  const top = hands.reduce<Hand | null>((m, h) => (m && m.w.y < h.w.y ? m : h), null)
+  if (el > 2000 && top) calibSamples.push(top.w)
   if (el < 3000) return
-  if (calibSamples.length) {
-    const mx = median(calibSamples.map((p) => 1 - p.x))
-    if (step.key === 'left') calib.left = mx
-    if (step.key === 'right') calib.right = mx
-    if (step.key === 'chest') calib.chestY = median(calibSamples.map((p) => p.y))
-  }
+  const n = calibSamples.length
+  const mx = n ? median(calibSamples.map((p) => 1 - p.x)) : NaN
+  const ok = n > 0 && (step.key !== 'right' || mx - calib.left > 0.1)
+  if (ok && step.key === 'left') calib.left = mx
+  if (ok && step.key === 'right') calib.right = mx
+  if (ok && step.key === 'chest') calib.chestY = median(calibSamples.map((p) => p.y))
+  calibMsg += `${step.key} ${ok ? `✓ ${n} 筆` : n ? '✗ 左右太近，沿用舊值' : '✗ 沒看到手，沿用舊值'}  `
   calibSamples = []
   calibStart = t
   if (++calibStep === STEPS.length) {
@@ -169,7 +162,7 @@ let pick: Pick = { left: null, right: null }
 let lastLabels = ''
 const det = new BeatDetector({ hyst: 0.03, minIntervalMs: 200, window: 3, interp: true })
 let beatFlash = 0
-// 統計：有手的格數裡，兩種認法對左手的判斷不一樣的有幾格
+// 統計：有手的格數裡，追蹤跟標籤對左手的判斷不一樣的有幾格
 const stat = { frames: 0, one: 0, two: 0, disagree: 0, beats: 0 }
 
 async function createLandmarker() {
@@ -197,10 +190,11 @@ function onFrame(now: number, meta: VideoFrameCallbackMetadata) {
   frames = frames.filter((f) => f > now - 1000)
 
   const hands: Hand[] = res.landmarks.map((lm, i) => ({ w: lm[0], label: res.handedness[i]?.[0]?.categoryName ?? '?' }))
-  lastLabels = hands.map((h) => `${h.label}@${h.w.x < 0.5 ? '左' : '右'}半`).join('、') || '—'
-  const p = byPosition(hands)
+  // 原始畫面的左半 = 鏡像畫面的右半 = 指揮的右邊
+  lastLabels = hands.map((h) => `${h.label}（在你的${h.w.x < 0.5 ? '右' : '左'}邊）`).join('、') || '—'
+  const p = byTracking(track, hands, t)
   const l = byLabel(hands)
-  pick = cfg.rule === 'position' ? p : l
+  pick = cfg.rule === 'track' ? p : l
   if (hands.length) {
     stat.frames++
     hands.length === 1 ? stat.one++ : stat.two++
@@ -275,21 +269,27 @@ function draw(t: number) {
   })
 
   const bpm = det.bpm()
+  const sel = bal ? bal.weights.indexOf(Math.max(...bal.weights)) : -1
   statsEl.textContent = [
     `辨識          ${usedDelegate}，推論 ${inferMs.toFixed(1)} ms，${frames.length} fps`,
     `看到的手      ${lastLabels}`,
-    `認左手的方式  ${cfg.rule === 'position' ? '位置' : '標籤（對調後）'}`,
+    `認左手的方式  ${cfg.rule === 'track' ? '追蹤' : '標籤（對調後）'}`,
     `左手          ${pick.left ? `mx ${(1 - pick.left.w.x).toFixed(2)}  y ${pick.left.w.y.toFixed(2)}` : '沒有'}`,
     `左右位置 h    ${bal ? bal.h.toFixed(2) : '—'}（0 = 最左、1 = 最右）`,
-    `高度 v        ${bal ? bal.v.toFixed(2) : pick.left ? '放下了' : '—'}（1 = 最大、-1 = 最小）`,
+    `選中          ${sel < 0 ? '—' : `${NAMES[sel]}（權重 ${bal!.weights[sel].toFixed(2)}）`}`,
+    `高度 v        ${calibStep >= 0 ? '校正中' : bal ? bal.v.toFixed(2) : pick.left ? '放下了' : '—'}（1 = 最大、-1 = 最小）`,
     `右手拍點      ${stat.beats} 下，量到 ${bpm ? bpm.toFixed(0) : '—'} BPM（音樂 ${cfg.bpm}）`,
-    `兩種認法不同  ${stat.disagree} / ${stat.frames} 格（一隻手 ${stat.one}、兩隻手 ${stat.two}）`,
+    `追蹤≠標籤     ${stat.disagree} / ${stat.frames} 格（一隻手 ${stat.one}、兩隻手 ${stat.two}）`,
     `校正          左 ${calib.left.toFixed(2)}  右 ${calib.right.toFixed(2)}  胸前 y ${calib.chestY.toFixed(2)}`,
+    `上次校正      ${calibMsg || '還沒做（用預設值）'}`,
   ].join('\n')
 }
 
 // ---- 按鈕 ----
+let started = false
 $('start').onclick = async () => {
+  if (started) return
+  started = true
   await Tone.start()
   statsEl.textContent = '載入模型中…'
   video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, frameRate: 30 } })
@@ -299,9 +299,11 @@ $('start').onclick = async () => {
   video.requestVideoFrameCallback(onFrame)
 }
 $('calib').onclick = () => {
+  if (!landmarker) return void (statsEl.textContent = '先按「開始」')
   calibStep = 0
-  calibStart = performance.now()
+  calibStart = -1
   calibSamples = []
+  calibMsg = ''
 }
 $('copy').onclick = () =>
   navigator.clipboard.writeText(JSON.stringify({ delegate: usedDelegate, inferMs, fps: frames.length, cfg, calib, stat }))

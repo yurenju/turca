@@ -37,3 +37,36 @@ export function balance(w: Point, c: Calib, o: BalanceOpts): Balance | null {
   const weights = Array.from({ length: SEATS }, (_, i) => Math.exp(-((h - seatPos(i)) ** 2) / (2 * o.sigma ** 2)))
   return { h, v, weights, gains: weights.map((wt) => Math.exp(db * wt)) }
 }
+
+// ---- 認手 ----
+export type Hand = { w: Point; label: string }
+export type Pick = { left: Hand | null; right: Hand | null }
+export type Track = { left: Point | null; right: Point | null; tL: number; tR: number }
+export const newTrack = (): Track => ({ left: null, right: null, tL: 0, tR: 0 })
+
+/**
+ * 追蹤規則：每格把離上一格左手最近的那隻當左手。沒有紀錄時才看位置：原始畫面沒翻，
+ * 指揮的左手在右邊（x 較大）。不能一直靠位置，因為左手要越過身體中線才選得到右邊的座位。
+ */
+const d2 = (a: Point, b: Point) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2
+const near = (a: Point, b: Point) => d2(a, b) < 0.3 ** 2 // 一格之內手不會移動超過畫面的 0.3
+export function byTracking(track: Track, hands: Hand[], t: number): Pick {
+  if (t - track.tL > 500) track.left = null // 超過半秒沒看到就忘掉
+  if (t - track.tR > 500) track.right = null
+  const { left: L, right: R } = track
+  const [a, b] = hands
+  let pick: Pick = { left: null, right: null }
+  if (b) {
+    const swap = L && R ? d2(a.w, L) + d2(b.w, R) > d2(a.w, R) + d2(b.w, L)
+      : L ? d2(b.w, L) < d2(a.w, L)
+      : R ? d2(a.w, R) < d2(b.w, R)
+      : a.w.x < b.w.x
+    pick = swap ? { left: b, right: a } : { left: a, right: b }
+  } else if (a) {
+    const isLeft = L && R ? d2(a.w, L) < d2(a.w, R) : L ? near(a.w, L) : R ? !near(a.w, R) : a.w.x > 0.5
+    pick = isLeft ? { left: a, right: null } : { left: null, right: a }
+  }
+  if (pick.left) (track.left = pick.left.w), (track.tL = t)
+  if (pick.right) (track.right = pick.right.w), (track.tR = t)
+  return pick
+}

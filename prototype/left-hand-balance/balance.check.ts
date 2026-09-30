@@ -1,6 +1,6 @@
 // PROTOTYPE — balance.ts 的自我檢查：npm run check:balance
 import assert from 'node:assert/strict'
-import { balance } from './balance.ts'
+import { balance, byTracking, newTrack } from './balance.ts'
 
 const c = { left: 0.2, right: 0.8, chestY: 0.5 } // 指揮視角的 0.2–0.8
 const o = { sigma: 0.15, span: 0.25, max: 1.5, min: 0.3, dropAt: 1.5 }
@@ -26,5 +26,20 @@ assert.ok(near(mid.gains[0], mid.gains[1]) && mid.gains[0] < 1.5 && mid.gains[0]
 
 // 手垂下去（低於胸前 1.5 個 span）就算放下了
 assert.equal(balance(at(0.5, 0.9), c, o), null)
+
+// 認手：左手單獨從指揮的左邊越過中線到右邊，一路都要認成左手
+const tr = newTrack()
+for (let k = 0; k <= 10; k++) {
+  const x = 0.8 - k * 0.06 // 原始畫面 0.8 → 0.2
+  assert.ok(byTracking(tr, [{ w: { x, y: 0.4 }, label: '?' }], k * 33).left, `x = ${x} 時應該還是左手`)
+}
+// 兩隻手交叉：每一格都照連續性分，交叉後左手仍是往右移的那隻
+const tr2 = newTrack()
+for (let k = 0; k <= 10; k++) {
+  const lx = 0.7 - k * 0.04 // 左手 0.7 → 0.3
+  const rx = 0.35 + k * 0.01 // 右手 0.35 → 0.45，被左手越過
+  const p = byTracking(tr2, [{ w: { x: rx, y: 0.6 }, label: '?' }, { w: { x: lx, y: 0.4 }, label: '?' }], k * 33)
+  assert.equal(p.left!.w.x, lx)
+}
 
 console.log('balance.ts ok:', top.gains.map((g) => g.toFixed(2)).join(', '))
