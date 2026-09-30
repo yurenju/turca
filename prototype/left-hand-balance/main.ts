@@ -190,7 +190,7 @@ function runCalib(t: number, hands: Hand[]) {
   if (ok && step.key === 'left') calib.left = mx
   if (ok && step.key === 'right') calib.right = mx
   if (ok && step.key === 'chest') calib.chestY = median(calibSamples.map((p) => p.y))
-  log({ ev: 'calib', step: step.key, n, ok, calib })
+  log({ t: Math.round(t), ev: 'calib', step: step.key, n, ok, calib, cfg })
   calibMsg += `${step.key} ${ok ? `✓ ${n} 筆` : n ? '✗ 左右太近，沿用舊值' : '✗ 沒看到手，沿用舊值'}  `
   calibSamples = []
   calibStart = -1
@@ -215,6 +215,8 @@ let pendingN = 0 // 同一個手勢連續幾格，到 3 格才切換，免得閃
 let selX: number | null = null
 const fist = new Hold(1000) // 握拳舉在胸前以上停 1 秒 = 全部恢復
 let resetFlash = -Infinity
+let lastSel = -1
+let lastMode: Shape = 'other'
 // 開發模式下每一格記一筆，每秒送回 dev server 寫進 prototype.log（見 vite.config.ts）
 const logBuf: string[] = []
 const log = (o: object) => import.meta.env.DEV && logBuf.push(JSON.stringify(o))
@@ -290,11 +292,6 @@ function onFrame(now: number, meta: VideoFrameCallbackMetadata) {
       : fist.since !== null && t - fist.since > 200 ? `✊ ${Math.max(0, (1000 - (t - fist.since)) / 1000).toFixed(1)}` : ''
   }
   const r2 = (n: number | undefined | null) => (n == null ? null : Math.round(n * 100) / 100)
-  log({
-    t: Math.round(t), n: hands.length, lab: hands.map((h) => `${h.label}@${r2(h.w.x)}`).join(' '),
-    lx: r2(pick.left?.w.x), ly: r2(pick.left?.w.y), seen, mode, fistUp,
-    sel: selected(), calib, ev: t === resetFlash ? 'reset' : undefined,
-  })
   bal = mode === 'palm' && selX !== null && pick.left && calibStep < 0 ? balance({ x: selX, y: pick.left.w.y }, calib, cfg) : null
   if (bal) {
     // 一次只改一個座位：旁邊的座位不跟著變
@@ -315,6 +312,23 @@ function onFrame(now: number, meta: VideoFrameCallbackMetadata) {
   } else if (!cfg.hold) {
     gains.forEach((g, i) => g.gain.setTargetAtTime(bal ? bal.gains[i] : 1, ct, bal ? cfg.attack : cfg.release))
   }
+
+  // 每格一筆：看得出「指 → 換手勢 → 調音量 → 放下」每一步的手勢、位置與音量
+  const sel = selected()
+  const ev = [
+    t === resetFlash && 'reset',
+    sel !== lastSel && `select:${sel < 0 ? '-' : NAMES[sel]}`,
+    mode !== lastMode && `mode:${lastMode}->${mode}`,
+  ].filter(Boolean).join(' ')
+  log({
+    t: Math.round(t), n: hands.length,
+    hands: hands.map((h) => `${h.label}@${r2(h.w.x)},${r2(h.w.y)}:${h.lm ? shape(h.lm) : '?'}`).join(' '),
+    lx: r2(pick.left?.w.x), ly: r2(pick.left?.w.y), tip: r2(pick.left?.lm?.[8].x), selX: r2(selX),
+    seen, mode, fistUp, sel, v: r2(bal?.v), target: r2(bal?.full),
+    g: gains.map((g) => r2(g.gain.value)), ev: ev || undefined,
+  })
+  lastSel = sel
+  lastMode = mode
 
   if (pick.right && det.push({ t, y: pick.right.w.y }) !== null) {
     stat.beats++
