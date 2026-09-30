@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE · 左手調音量</title>
+    <style>
+      body { font: 14px system-ui, sans-serif; margin: 16px; background: #111; color: #eee; }
+      .banner { background: #a33; padding: 4px 8px; display: inline-block; margin-bottom: 8px; }
+      .row { display: flex; gap: 16px; align-items: flex-start; }
+      #controls { flex: 0 0 300px; position: sticky; top: 8px; }
+      .stage { position: relative; width: 640px; max-width: 100%; }
+      .stage video, .stage canvas { width: 100%; display: block; transform: scaleX(-1); }
+      .stage canvas { position: absolute; inset: 0; }
+      #prompt { position: absolute; inset: 0; display: grid; place-items: center; font-size: 32px; font-weight: bold;
+        text-align: center; text-shadow: 0 0 8px #000; pointer-events: none; }
+      #seats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 640px; max-width: 100%; margin-top: 8px; }
+      .seat { background: #000; padding: 6px; text-align: center; border: 2px solid #333; cursor: pointer; }
+      .seat .bar { height: 120px; position: relative; background: #222; margin: 6px 0; }
+      .seat .fill { position: absolute; bottom: 0; left: 0; right: 0; background: #6c6; }
+      .seat .one { position: absolute; left: 0; right: 0; border-top: 1px dashed #aaa; }
+      #stats { font: 13px ui-monospace, monospace; white-space: pre; background: #000; padding: 8px; margin-top: 8px; width: 640px; max-width: 100%; box-sizing: border-box; overflow-x: auto; }
+      #controls label { display: block; margin: 6px 0; }
+      #controls input[type=range] { width: 180px; vertical-align: middle; }
+      button { font-size: 16px; padding: 6px 14px; margin-right: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="banner">PROTOTYPE — 用完就丟（地圖 #1、票 #8）</div>
+    <div>
+      <button id="start">開始（開鏡頭與聲音）</button>
+      <button id="calib">校正（跟著畫面做）</button>
+      <button id="copy">複製紀錄</button>
+    </div>
+    <p>
+      四個座位由左到右是小號（旋律）、鋼琴、貝斯、鼓，聲音也照這個順序從左到右擺。樂器只是為了好分辨，第一版還是弦樂四重奏。
+      左手<b>比食指</b>，看著畫面把指尖（黃點）放進一個座位的格子來選擇；<b>張開手掌</b>時選擇鎖住，
+      手掌中心（白點）往上移變大聲、往下移變小聲（勾「相對移動」時從目前的音量開始調；沒勾時綠線是最大、紅線是最小、白線是原本的音量）；
+      <b>握拳舉在白線以上停 1 秒</b>就全部恢復；其他手勢（放鬆、握拳但手在白線以下）或手離開畫面時不調整，音量慢慢恢復（勾「保持音量」就不恢復）。
+      右手可以同時打拍，只用來看會不會互相干擾。
+    </p>
+    <div class="row">
+      <div>
+        <div class="stage"><video id="video" playsinline muted></video><canvas id="overlay"></canvas><div id="prompt"></div></div>
+        <div id="seats"></div>
+        <div id="stats">按「開始」</div>
+      </div>
+      <div id="controls"></div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
