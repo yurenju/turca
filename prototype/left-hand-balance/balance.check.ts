@@ -1,14 +1,14 @@
 // PROTOTYPE — balance.ts 的自我檢查：npm run check:balance
 import assert from 'node:assert/strict'
-import { balance, byTracking, Hold, newTrack, shape } from './balance.ts'
+import { balance, byTracking, dedupe, EDGE, gainOfV, Hold, newTrack, palmCenter, relV, shape, vOfGain } from './balance.ts'
 
-const c = { left: 0.2, right: 0.8, chestY: 0.5 } // 指揮視角的 0.2–0.8
-const o = { sigma: 0.15, span: 0.25, max: 1.5, min: 0.3, dropAt: 1.5 }
+const c = { left: 0.2, right: 0.8, top: 0.25, bottom: 0.75 } // 指揮視角的 0.2–0.8；中間是 0.5
+const o = { sigma: 0.15, max: 1.5, min: 0.3, dropAt: 1.5 }
 // 指揮視角的 mx 換回原始畫面的 x
 const at = (h: number, y: number) => ({ x: 1 - (c.left + h * (c.right - c.left)), y })
 const near = (a: number, b: number) => Math.abs(a - b) < 1e-9
 
-// 手在胸前高度：不管選哪個座位，大家都是 1
+// 手在最高與最低的正中間：不管選哪個座位，大家都是 1
 assert.ok(balance(at(0, 0.5), c, o)!.gains.every((g) => near(g, 1)))
 
 // 伸到最左（第一小提琴）、舉到最高：它到 1.5，最右的大提琴幾乎不受影響
@@ -24,7 +24,7 @@ assert.ok(near(balance(at(1, 0), c, o)!.gains[3], 1.5))
 const mid = balance(at(1 / 6, 0.25), c, o)!
 assert.ok(near(mid.gains[0], mid.gains[1]) && mid.gains[0] < 1.5 && mid.gains[0] > 1)
 
-// 手垂下去（低於胸前 1.5 個 span）就算放下了
+// 手垂下去（比中間低 1.5 個「中間到最低」）就算放下了
 assert.equal(balance(at(0.5, 0.9), c, o), null)
 
 // 認手：左手單獨從指揮的左邊越過中線到右邊，一路都要認成左手
@@ -74,5 +74,21 @@ assert.equal(hold(on(20)), 1) // 握 2 秒也只觸發一次
 assert.equal(hold([...on(5), ...off(2), ...on(5)]), 1)
 assert.equal(hold([...on(5), ...off(4), ...on(5)]), 0)
 assert.equal(hold([...on(12), ...off(5), ...on(12)]), 2)
+
+// 同一隻手被偵測成兩隻：只留前面（分數高）那隻；兩隻真的分開的手都留
+const hA = { w: { x: 0.4, y: 0.6 }, label: 'Left' }
+assert.deepEqual(dedupe([hA, { w: { x: 0.42, y: 0.59 }, label: 'Right' }]), [hA])
+assert.equal(dedupe([hA, { w: { x: 0.7, y: 0.6 }, label: 'Right' }]).length, 2)
+// 手掌中心在手腕上方（手指朝上時）
+assert.ok(palmCenter(hand([true, true, true, true])).y < 0.8)
+
+// 兩端緩衝：舉到最高的 85% 就是最大聲
+assert.ok(near(balance(at(0, 0.5 - 0.25 * EDGE), c, o)!.full, 1.5))
+// v 跟倍率可以互相換回來
+for (const v of [-1, -0.4, 0, 0.3, 1]) assert.ok(Math.abs(vOfGain(gainOfV(v, o), o) - v) < 1e-9)
+// 相對移動：從目前的音量開始，手不動就不變；往上移「中間到最高 × 85%」就從 0 加到 1；不會超過 1
+assert.equal(relV(0.4, 0.6, 0.6, c), 0.4)
+assert.ok(near(relV(0, 0.6, 0.6 - 0.25 * EDGE, c), 1))
+assert.equal(relV(0.8, 0.6, 0.2, c), 1)
 
 console.log('balance.ts ok:', top.gains.map((g) => g.toFixed(2)).join(', '))
