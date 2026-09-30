@@ -72,33 +72,35 @@ export function byTracking(track: Track, hands: Hand[], t: number): Pick {
 }
 
 // ---- 手勢 ----
-export type Shape = 'point' | 'palm' | 'other'
+export type Shape = 'point' | 'palm' | 'fist' | 'other'
 const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
 /** 指尖離手腕比第二個關節離手腕遠一截，就算伸直（不看方向，所以食指朝側邊也算）。 */
 const extended = (lm: Point[], tip: number) => dist(lm[0], lm[tip]) > dist(lm[0], lm[tip - 2]) * 1.15
-/** 只有食指伸直 = 指（選座位）；四指都伸直 = 張開手掌（調音量）。大拇指不看。 */
+/** 只有食指伸直 = 指（選座位）；四指都伸直 = 張開手掌（調音量）；四指都彎 = 握拳。大拇指不看。 */
 export function shape(lm: Point[]): Shape {
   const [index, middle, ring, pinky] = [8, 12, 16, 20].map((tip) => extended(lm, tip))
   if (index && !middle && !ring && !pinky) return 'point'
   if (index && middle && ring && pinky) return 'palm'
+  if (!index && !middle && !ring && !pinky) return 'fist'
   return 'other'
 }
 
 /**
- * 全部恢復的手勢：張開手掌，1 秒內從一端掃到另一端（哪個方向都可以）。
- * 手動得快時畫面會糊，模型常在中間幾格抓不到手，所以斷掉 0.3 秒以內都接著算。
+ * 停住一個姿勢一段時間才算數（全部恢復 = 握拳舉在胸前以上停 1 秒）。
+ * 中間斷掉 0.3 秒以內照樣接著算；觸發一次之後，要先放開超過 0.3 秒才能再觸發。
  */
-export class Sweep {
-  private s: { t: number; h: number }[] = []
-  /** h = 張開手掌時手在左右的位置（0 = 最左、1 = 最右）；這一格沒有張開的手就傳 null。 */
-  push(t: number, h: number | null): boolean {
-    const last = this.s.at(-1)
-    if (last && t - last.t > 300) this.s = []
-    if (h === null) return false
-    this.s.push({ t, h })
-    while (this.s[0].t < t - 1000) this.s.shift()
-    if (!this.s.some((p) => p.h < 0.15) || !this.s.some((p) => p.h > 0.85)) return false
-    this.s = []
-    return true
+export class Hold {
+  since: number | null = null // 這一次從什麼時候開始握住
+  private last = -Infinity
+  private done = false
+  private ms: number
+  constructor(ms: number) {
+    this.ms = ms
+  }
+  push(t: number, on: boolean): boolean {
+    if (on) (this.last = t), (this.since ??= t)
+    else if (t - this.last > 300) (this.since = null), (this.done = false)
+    if (this.since === null || this.done || t - this.since < this.ms) return false
+    return (this.done = true)
   }
 }

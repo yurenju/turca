@@ -4,7 +4,7 @@
 import * as Tone from 'tone'
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
 import { BeatDetector } from '../beat-tracking/beat.ts'
-import { balance, byTracking, newTrack, seatPos, shape, Sweep, SEATS, type Balance, type Calib, type Hand, type Pick, type Point, type Shape } from './balance.ts'
+import { balance, byTracking, newTrack, seatPos, shape, Hold, SEATS, type Balance, type Calib, type Hand, type Pick, type Point, type Shape } from './balance.ts'
 
 const WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
 const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'
@@ -213,9 +213,8 @@ let mode: Shape = 'other'
 let pending: Shape = 'other'
 let pendingN = 0 // 同一個手勢連續幾格，到 3 格才切換，免得閃來閃去
 let selX: number | null = null
-const sweep = new Sweep()
-let sweepLock = false // 剛掃完：手掌要先放開，才能再調音量
-let sweepFlash = 0
+const fist = new Hold(1000) // 握拳舉在胸前以上停 1 秒 = 全部恢復
+let resetFlash = -Infinity
 // 開發模式下每一格記一筆，每秒送回 dev server 寫進 prototype.log（見 vite.config.ts）
 const logBuf: string[] = []
 const log = (o: object) => import.meta.env.DEV && logBuf.push(JSON.stringify(o))
@@ -234,7 +233,7 @@ let lastLabels = ''
 const det = new BeatDetector({ hyst: 0.03, minIntervalMs: 200, window: 3, interp: true })
 let beatFlash = 0
 // 統計：有手的格數裡，追蹤跟標籤對左手的判斷不一樣的有幾格
-const stat = { frames: 0, one: 0, two: 0, disagree: 0, beats: 0, sweeps: 0 }
+const stat = { frames: 0, one: 0, two: 0, disagree: 0, beats: 0, resets: 0 }
 
 async function createLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(WASM)
@@ -273,30 +272,30 @@ function onFrame(now: number, meta: VideoFrameCallbackMetadata) {
   }
 
   if (calibStep >= 0) runCalib(t, hands)
-  else promptEl.innerHTML = t - sweepFlash < 1000 ? '全部恢復' : ''
 
   const seen = pick.left?.lm ? shape(pick.left.lm) : 'other'
   if (seen === pending) pendingN++
   else (pending = seen), (pendingN = 1)
   if (pendingN >= 3 || !pick.left) mode = pending
   if (mode === 'point' && pick.left?.lm && calibStep < 0) selX = pick.left.lm[8].x
-  // 掃是整隻手的大動作，不管左右手標籤（掃過身體中線時標籤常會跳），畫面上有一隻張開的手就算
-  const palm = calibStep < 0 ? hands.find((h) => h.lm && shape(h.lm) === 'palm') : undefined
-  const palmH = palm ? (balance(palm.w, calib, cfg)?.h ?? null) : null
-  if (sweep.push(t, palmH)) {
+  // 握拳要舉在胸前以上才算，免得手放鬆垂下時自然半握被當成握拳
+  const fistUp = calibStep < 0 && mode === 'fist' && !!pick.left && pick.left.w.y < calib.chestY
+  if (fist.push(t, fistUp)) {
     resetAll()
-    stat.sweeps++
-    sweepFlash = t
-    sweepLock = true
+    stat.resets++
+    resetFlash = t
   }
-  if (mode !== 'palm') sweepLock = false
+  if (calibStep < 0) {
+    promptEl.innerHTML = t - resetFlash < 1000 ? '全部恢復'
+      : fist.since !== null && t - fist.since > 200 ? `✊ ${Math.max(0, (1000 - (t - fist.since)) / 1000).toFixed(1)}` : ''
+  }
   const r2 = (n: number | undefined | null) => (n == null ? null : Math.round(n * 100) / 100)
   log({
     t: Math.round(t), n: hands.length, lab: hands.map((h) => `${h.label}@${r2(h.w.x)}`).join(' '),
-    lx: r2(pick.left?.w.x), ly: r2(pick.left?.w.y), seen, mode, h: r2(palmH), lock: sweepLock,
-    sel: selected(), calib, ev: t === sweepFlash ? 'sweep' : undefined,
+    lx: r2(pick.left?.w.x), ly: r2(pick.left?.w.y), seen, mode, fistUp,
+    sel: selected(), calib, ev: t === resetFlash ? 'reset' : undefined,
   })
-  bal = mode === 'palm' && !sweepLock && selX !== null && pick.left && calibStep < 0 ? balance({ x: selX, y: pick.left.w.y }, calib, cfg) : null
+  bal = mode === 'palm' && selX !== null && pick.left && calibStep < 0 ? balance({ x: selX, y: pick.left.w.y }, calib, cfg) : null
   if (bal) {
     // 一次只改一個座位：旁邊的座位不跟著變
     const b = bal
@@ -408,8 +407,8 @@ function draw(t: number) {
     `認左手的方式  ${cfg.rule === 'track' ? '追蹤' : '標籤'}`,
     `左手          ${pick.left ? `mx ${(1 - pick.left.w.x).toFixed(2)}  y ${pick.left.w.y.toFixed(2)}` : '沒有'}`,
     `左右位置 h    ${bal ? bal.h.toFixed(2) : '—'}（0 = 最左、1 = 最右）`,
-    `手勢          ${{ point: '☝ 食指（選座位）', palm: sweepLock ? '✋ 張開手掌（剛全部恢復，先放開手）' : '✋ 張開手掌（調音量）', other: '其他（不動作）' }[mode]}`,
-    `全部恢復      ${stat.sweeps} 次（張開手掌，1 秒內從一端掃到另一端）`,
+    `手勢          ${{ point: '☝ 食指（選座位）', palm: '✋ 張開手掌（調音量）', fist: '✊ 握拳（舉在胸前以上停 1 秒 = 全部恢復）', other: '其他（不動作）' }[mode]}`,
+    `全部恢復      ${stat.resets} 次`,
     `選中          ${sel < 0 ? '還沒選（先用食指指一個座位）' : NAMES[sel]}`,
     `高度 v        ${calibStep >= 0 ? '校正中' : bal ? bal.v.toFixed(2) : pick.left ? '放下了' : '—'}（1 = 最大、-1 = 最小）`,
     `右手拍點      ${stat.beats} 下，量到 ${bpm ? bpm.toFixed(0) : '—'} BPM（音樂 ${cfg.bpm}）`,

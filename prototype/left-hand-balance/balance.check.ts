@@ -1,6 +1,6 @@
 // PROTOTYPE — balance.ts 的自我檢查：npm run check:balance
 import assert from 'node:assert/strict'
-import { balance, byTracking, newTrack, shape, Sweep } from './balance.ts'
+import { balance, byTracking, Hold, newTrack, shape } from './balance.ts'
 
 const c = { left: 0.2, right: 0.8, chestY: 0.5 } // 指揮視角的 0.2–0.8
 const o = { sigma: 0.15, span: 0.25, max: 1.5, min: 0.3, dropAt: 1.5 }
@@ -56,23 +56,23 @@ function hand(straight: boolean[]) {
 }
 assert.equal(shape(hand([true, false, false, false])), 'point')
 assert.equal(shape(hand([true, true, true, true])), 'palm')
-assert.equal(shape(hand([false, false, false, false])), 'other') // 握拳
+assert.equal(shape(hand([false, false, false, false])), 'fist')
 assert.equal(shape(hand([true, true, false, false])), 'other') // 比 YA
 // 食指朝側邊指也要認得：把整隻手轉 90 度
 const side = hand([true, false, false, false]).map((p) => ({ x: 0.5 + (0.8 - p.y), y: 0.8 - (p.x - 0.5) }))
 assert.equal(shape(side), 'point')
 
-// 全部恢復：0.6 秒從左掃到右會觸發；慢慢移（3 秒）不會；
-// 中間糊掉幾格（0.2 秒）照樣算，斷太久（0.4 秒）就要重來
-const sweep = (ms: number, gap: [number, number] = [-1, -1]) => {
-  const sw = new Sweep()
-  let hit = false
-  for (let t = 0; t <= ms; t += 33) hit ||= sw.push(t, t >= gap[0] && t <= gap[1] ? null : t / ms)
-  return hit
+// 全部恢復：握住 1 秒才觸發、只觸發一次；中間斷 0.2 秒照算，斷 0.4 秒要重來；放開後可以再觸發
+const hold = (frames: boolean[]) => {
+  const h = new Hold(1000)
+  return frames.map((on, k) => h.push(k * 100, on)).filter(Boolean).length
 }
-assert.equal(sweep(600), true)
-assert.equal(sweep(3000), false)
-assert.equal(sweep(900, [300, 500]), true)
-assert.equal(sweep(900, [250, 650]), false)
+const on = (n: number) => Array(n).fill(true)
+const off = (n: number) => Array(n).fill(false)
+assert.equal(hold(on(9)), 0) // 0.8 秒
+assert.equal(hold(on(20)), 1) // 握 2 秒也只觸發一次
+assert.equal(hold([...on(5), ...off(2), ...on(5)]), 1)
+assert.equal(hold([...on(5), ...off(4), ...on(5)]), 0)
+assert.equal(hold([...on(12), ...off(5), ...on(12)]), 2)
 
 console.log('balance.ts ok:', top.gains.map((g) => g.toFixed(2)).join(', '))
